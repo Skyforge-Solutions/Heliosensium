@@ -10,10 +10,10 @@
 - [ ] put more images 
 - [ ] add bloging set up 
 - [x] add links to social in footer 
-- [ ] change the plans 
-- [ ] remove the Multiple Questions = Same Credit from /pricing page 
+- [ ] change the plans to credit system.
+- [x] remove the Multiple Questions = Same Credit from /pricing page 
 - [x] remove the admin page.
-- [ ] improve the 404 page, so that it looks like it's a part of the ui 
+- [x] improve the 404 page, so that it looks like it's a part of the ui 
 - [ ] 
 - [ ] 
 - [ ] 

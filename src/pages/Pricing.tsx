@@ -60,7 +60,7 @@ const Pricing = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="helia-card text-center">
               <div className="w-16 h-16 bg-helia-blue rounded-full flex items-center justify-center mb-4 mx-auto">
                 <span className="text-2xl font-bold text-primary">1</span>
@@ -77,19 +77,6 @@ const Pricing = () => {
             <div className="helia-card text-center">
               <div className="w-16 h-16 bg-helia-blue rounded-full flex items-center justify-center mb-4 mx-auto">
                 <span className="text-2xl font-bold text-primary">2</span>
-              </div>
-              <h3 className="text-xl font-bold mb-3">
-                Multiple Questions = Same Credit
-              </h3>
-              <p className="text-gray-700">
-                Ask as many follow-up questions as you need within the same
-                conversation.
-              </p>
-            </div>
-
-            <div className="helia-card text-center">
-              <div className="w-16 h-16 bg-helia-blue rounded-full flex items-center justify-center mb-4 mx-auto">
-                <span className="text-2xl font-bold text-primary">3</span>
               </div>
               <h3 className="text-xl font-bold mb-3">No Hidden Fees</h3>
               <p className="text-gray-700">
