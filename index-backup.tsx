@@ -1,63 +1,10 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Shield, Lightbulb, Mic, Flower } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getBlogs, Blog } from "@/lib/api";
-import { format } from "date-fns";
-
-// Helper function to calculate reading time
-const calculateReadingTime = (content: string): string => {
-  const wordsPerMinute = 200;
-  const words = content.trim().split(/\s+/).length;
-  const minutes = Math.ceil(words / wordsPerMinute);
-  return `${minutes} min read`;
-};
-
-// Helper function to truncate text
-const truncateText = (text: string, maxLength: number): string => {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength).trim() + "...";
-};
-
-// Helper function to strip HTML tags for clean summaries
-const stripHtmlTags = (html: string): string => {
-  return html.replace(/<[^>]*>/g, "");
-};
 
 const Index = () => {
-  const [featuredBlogs, setFeaturedBlogs] = useState<Blog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch featured blogs on component mount
-  useEffect(() => {
-    const fetchFeaturedBlogs = async () => {
-      try {
-        setLoading(true);
-        // Get only approved blogs, limit to 2, sorted by views to get popular ones
-        const response = await getBlogs(2, undefined, "views");
-
-        if (response.data.length > 0) {
-          console.log("Fetched featured blogs:", response.data);
-          setFeaturedBlogs(response.data);
-          setError(null);
-        } else {
-          console.log("No featured blogs found");
-          setFeaturedBlogs([]);
-        }
-      } catch (err) {
-        console.error("Error fetching featured blogs:", err);
-        setError("Failed to load featured blogs");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFeaturedBlogs();
-  }, []);
-
   return (
     <>
       <Navbar />
@@ -314,60 +261,41 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-            {loading ? (
-              // Show loading state
-              <div className="col-span-2 text-center py-12">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]"></div>
-                <p className="mt-4 text-gray-600">Loading blogs...</p>
-              </div>
-            ) : error ? (
-              // Show error state
-              <div className="col-span-2 text-center py-12">
-                <p className="text-gray-600">{error}</p>
-              </div>
-            ) : featuredBlogs.length > 0 ? (
-              // Show real blogs
-              featuredBlogs.map((blog) => {
-                // Format the date
-                const formattedDate = format(
-                  new Date(blog.submissionDate),
-                  "MMMM d, yyyy"
-                );
-                // Calculate read time
-                const readTime = calculateReadingTime(blog.content);
-                // Get summary or excerpt from content
-                const cleanContent = stripHtmlTags(blog.content);
-                const displaySummary =
-                  blog.summary || truncateText(cleanContent, 150);
+            <div className="helia-card">
+              <h3 className="text-xl font-bold mb-2">
+                How I Used Helia to Help My Child Overcome Social Anxiety
+              </h3>
+              <p className="text-gray-500 mb-3">May 15, 2023 • 5 min read</p>
+              <p className="text-gray-700 mb-4">
+                When my daughter started showing signs of social anxiety, I
+                wasn't sure how to help. Here's how Helia's personalized
+                guidance made a difference...
+              </p>
+              <Link
+                to="/blog/1"
+                className="text-primary font-medium hover:underline"
+              >
+                Read more
+              </Link>
+            </div>
 
-                return (
-                  <div
-                    key={blog.id}
-                    className="helia-card hover:shadow-md transition-shadow"
-                  >
-                    <h3 className="text-xl font-bold mb-2">{blog.title}</h3>
-                    <p className="text-gray-500 mb-3">
-                      {formattedDate} • {readTime} • by {blog.authorName}
-                    </p>
-                    <p className="text-gray-700 mb-4">{displaySummary}</p>
-                    <Link
-                      to={`/blog/${blog.id}`}
-                      className="text-primary font-medium hover:underline"
-                    >
-                      Read more
-                    </Link>
-                  </div>
-                );
-              })
-            ) : (
-              // Show empty state
-              <div className="col-span-2 text-center py-12">
-                <p className="text-gray-600">No blog posts available yet.</p>
-                <Link to="/blog/submit" className="mt-4 inline-block">
-                  <Button variant="outline">Submit the first blog</Button>
-                </Link>
-              </div>
-            )}
+            <div className="helia-card">
+              <h3 className="text-xl font-bold mb-2">
+                Screen Time Strategies That Actually Work According to Experts
+              </h3>
+              <p className="text-gray-500 mb-3">April 28, 2023 • 4 min read</p>
+              <p className="text-gray-700 mb-4">
+                Managing screen time can feel like a constant battle. These
+                research-backed approaches recommended by Helia have transformed
+                our family's digital habits...
+              </p>
+              <Link
+                to="/blog/2"
+                className="text-primary font-medium hover:underline"
+              >
+                Read more
+              </Link>
+            </div>
           </div>
 
           <div className="text-center">

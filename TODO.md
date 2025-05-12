@@ -4,7 +4,6 @@
 
 - [ ] Add screenshots of Helia Chat, plus review the text and ui - bhaven 
 - [ ] put more images - bhaven 
-- [ ] add bloging set up - srinath
 - [ ] add links to social in footer 
 - [ ] change the plans to credit system.
 - [x] remove the Multiple Questions = Same Credit from /pricing page 

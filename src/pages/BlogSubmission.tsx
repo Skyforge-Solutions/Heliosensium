@@ -6,15 +6,19 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { submitBlog, ApiError } from "@/lib/api";
+import RichTextEditor from "@/components/RichTextEditor";
 
 const BlogSubmission = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
-    name: "",
-    email: "",
+    authorName: "",
+    authorEmail: "",
+    summary: "",
   });
 
   const handleChange = (
@@ -24,26 +28,64 @@ const BlogSubmission = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleEditorChange = (html: string) => {
+    setFormData((prev) => ({ ...prev, content: html }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage(null);
 
-    // Here you would normally send the data to your API
-    // For now, we'll simulate a submission
-    setTimeout(() => {
+    // Format the data for API submission
+    const submissionData = {
+      title: formData.title,
+      content: formData.content,
+      authorName: formData.authorName,
+      authorEmail: formData.authorEmail,
+      // Only include summary if it's not empty
+      ...(formData.summary ? { summary: formData.summary } : {}),
+    };
+
+    try {
+      await submitBlog(submissionData);
+
       toast({
         title: "Blog Submitted Successfully",
         description:
           "Your blog has been submitted for review. We'll notify you once it's approved.",
       });
+
+      // Reset form
       setFormData({
         title: "",
         content: "",
-        name: "",
-        email: "",
+        authorName: "",
+        authorEmail: "",
+        summary: "",
       });
+    } catch (err) {
+      console.error("Submission error:", err);
+
+      if (err instanceof ApiError) {
+        setErrorMessage(`Error: ${err.message}`);
+      } else {
+        setErrorMessage(
+          "An unexpected error occurred. Please try again later."
+        );
+      }
+
+      toast({
+        title: "Submission Failed",
+        description:
+          err instanceof ApiError
+            ? err.message
+            : "An unexpected error occurred. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -70,6 +112,12 @@ const BlogSubmission = () => {
         <div className="helia-container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="md:col-span-2">
+              {errorMessage && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                  {errorMessage}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="title">Blog Title</Label>
@@ -80,44 +128,55 @@ const BlogSubmission = () => {
                     value={formData.title}
                     onChange={handleChange}
                     required
+                    maxLength={100}
                     className="w-full"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="content">Your Story</Label>
+                  <Label htmlFor="summary">Summary (Optional)</Label>
                   <Textarea
-                    id="content"
-                    name="content"
-                    placeholder="Share your parenting experience, insights, or how Heliosensium has helped your family..."
-                    value={formData.content}
+                    id="summary"
+                    name="summary"
+                    placeholder="A brief summary of your blog post (max 200 characters)"
+                    value={formData.summary}
                     onChange={handleChange}
-                    required
-                    className="min-h-[300px]"
+                    maxLength={200}
+                    className="min-h-[100px]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="content">Your Story</Label>
+                  <RichTextEditor
+                    content={formData.content}
+                    onChange={handleEditorChange}
+                    placeholder="Share your parenting experience, insights, or how Heliosensium has helped your family..."
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Your Name</Label>
+                    <Label htmlFor="authorName">Your Name</Label>
                     <Input
-                      id="name"
-                      name="name"
+                      id="authorName"
+                      name="authorName"
                       placeholder="How you'd like to be credited"
-                      value={formData.name}
+                      value={formData.authorName}
                       onChange={handleChange}
                       required
+                      maxLength={50}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="authorEmail">Email Address</Label>
                     <Input
-                      id="email"
-                      name="email"
+                      id="authorEmail"
+                      name="authorEmail"
                       type="email"
                       placeholder="We'll contact you when your blog is published"
-                      value={formData.email}
+                      value={formData.authorEmail}
                       onChange={handleChange}
                       required
                     />
