@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Menu, X } from "lucide-react";
-import { ThemeToggle } from "./ThemeToggle";
 
 const CHAT_APP_URL = "https://chat.heliosensium.com";
 
@@ -73,7 +72,6 @@ const Navbar = () => {
             >
               Blog
             </Link>
-            <ThemeToggle />
             <a href={CHAT_APP_URL} target="_blank" rel="noopener noreferrer">
               <Button className="helia-btn-primary flex items-center gap-2">
                 <MessageCircle size={18} />
@@ -83,8 +81,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center gap-2">
-            <ThemeToggle />
+          <div className="md:hidden flex items-center">
             <button className="text-foreground" onClick={toggleMenu}>
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -143,7 +140,7 @@ const Navbar = () => {
                 href={CHAT_APP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={toggleMenu}
+                className="inline-block"
               >
                 <Button className="helia-btn-primary w-full flex items-center gap-2 justify-center">
                   <MessageCircle size={18} />

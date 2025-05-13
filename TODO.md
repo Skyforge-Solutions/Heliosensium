@@ -8,7 +8,6 @@
 - [ ] change the plans to credit system.
 - [x] remove the Multiple Questions = Same Credit from /pricing page 
 - [x] remove the admin page.
-- [x] improve the 404 page, so that it looks like it's a part of the ui 
 
 ## Critical Bug and time taking to fix
 - [ ] fix the dark mode

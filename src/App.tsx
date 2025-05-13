@@ -8,9 +8,7 @@ import {
   Route,
   Navigate,
   useLocation,
-  useNavigate,
 } from "react-router-dom";
-import { ThemeProvider } from "./components/ThemeProvider";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Pricing from "./pages/Pricing";
@@ -199,43 +197,41 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="helia-ui-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/submit" element={<BlogSubmission />} />
-              <Route path="/blog/:id" element={<BlogPost />} />
-              <Route path="/suraj/login" element={<AdminLogin />} />
-              <Route
-                path="/suraj/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/suraj/blog/:id"
-                element={
-                  <ProtectedRoute>
-                    <AdminBlogPost />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/suraj/auth-debug" element={<AuthDebugger />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/submit" element={<BlogSubmission />} />
+            <Route path="/blog/:id" element={<BlogPost />} />
+            <Route path="/suraj/login" element={<AdminLogin />} />
+            <Route
+              path="/suraj/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/suraj/blog/:id"
+              element={
+                <ProtectedRoute>
+                  <AdminBlogPost />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/suraj/auth-debug" element={<AuthDebugger />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
   </QueryClientProvider>
 );
 
