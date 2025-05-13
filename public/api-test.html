@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heliosensium API Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1 {
+      color: #2563eb;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 10px;
+    }
+    .card {
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+    pre {
+      background-color: #1e293b;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+    .results {
+      margin-top: 24px;
+    }
+    .hidden {
+      display: none;
+    }
+    .endpoint-result {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .success {
+      color: #10b981;
+    }
+    .error {
+      color: #ef4444;
+    }
+    .warning {
+      color: #f59e0b;
+    }
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-left-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Heliosensium API Test</h1>
+  
+  <div class="card">
+    <h2>API Endpoint Configuration</h2>
+    <div>
+      <label for="dev-url">Development URL:</label>
+      <input type="text" id="dev-url" value="http://localhost:8000/api" style="width: 300px; padding: 6px;">
+    </div>
+    <div style="margin-top: 12px;">
+      <label for="prod-url">Production URL:</label>
+      <input type="text" id="prod-url" value="https://heliosensium-blog-backend.onrender.com/api" style="width: 300px; padding: 6px;">
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>Test Options</h2>
+    <div>
+      <input type="checkbox" id="test-dev" checked>
+      <label for="test-dev">Test Development API</label>
+    </div>
+    <div>
+      <input type="checkbox" id="test-prod" checked>
+      <label for="test-prod">Test Production API</label>
+    </div>
+    <div style="margin-top: 16px;">
+      <button id="run-test">Run API Tests</button>
+      <button id="clear-results" style="background-color: #6b7280; margin-left: 8px;">Clear Results</button>
+    </div>
+  </div>
+  
+  <div id="results-container" class="results hidden">
+    <h2>Test Results</h2>
+    
+    <div id="dev-results" class="card hidden">
+      <h3>Development API Results</h3>
+      <div id="dev-status"></div>
+      <div id="dev-endpoints"></div>
+    </div>
+    
+    <div id="prod-results" class="card hidden">
+      <h3>Production API Results</h3>
+      <div id="prod-status"></div>
+      <div id="prod-endpoints"></div>
+    </div>
+    
+    <div id="conclusion" class="card hidden">
+      <h3>Conclusion</h3>
+      <div id="conclusion-text"></div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const runTestBtn = document.getElementById('run-test');
+      const clearResultsBtn = document.getElementById('clear-results');
+      const resultsContainer = document.getElementById('results-container');
+      const devResults = document.getElementById('dev-results');
+      const prodResults = document.getElementById('prod-results');
+      const conclusion = document.getElementById('conclusion');
+      
+      clearResultsBtn.addEventListener('click', () => {
+        devResults.classList.add('hidden');
+        prodResults.classList.add('hidden');
+        conclusion.classList.add('hidden');
+        resultsContainer.classList.add('hidden');
+        document.getElementById('dev-endpoints').innerHTML = '';
+        document.getElementById('prod-endpoints').innerHTML = '';
+        document.getElementById('dev-status').innerHTML = '';
+        document.getElementById('prod-status').innerHTML = '';
+        document.getElementById('conclusion-text').innerHTML = '';
+      });
+      
+      runTestBtn.addEventListener('click', async () => {
+        // Get configuration
+        const devUrl = document.getElementById('dev-url').value.trim();
+        const prodUrl = document.getElementById('prod-url').value.trim();
+        const testDev = document.getElementById('test-dev').checked;
+        const testProd = document.getElementById('test-prod').checked;
+        
+        if (!testDev && !testProd) {
+          alert('Please select at least one API to test.');
+          return;
+        }
+        
+        // Reset results
+        clearResultsBtn.click();
+        resultsContainer.classList.remove('hidden');
+        
+        // Define endpoints to test
+        const ENDPOINTS = [
+          { name: 'Public Blogs', path: '/blogs?limit=10&status=approved' },
+          { name: 'Health Check', path: '/health' },
+          { name: 'Auth Status', path: '/auth/validate', credentials: true }
+        ];
+        
+        let devWorking = false;
+        let prodWorking = false;
+        let devHasBlogs = false;
+        let prodHasBlogs = false;
+        
+        // Test development API
+        if (testDev) {
+          devResults.classList.remove('hidden');
+          document.getElementById('dev-status').innerHTML = 
+            '<div><span class="loading"></span> Testing development API...</div>';
+          
+          const results = await testApi(devUrl, ENDPOINTS);
+          
+          // Update status
+          if (results.success) {
+            document.getElementById('dev-status').innerHTML = 
+              `<div class="success">✅ API is accessible</div>`;
+            devWorking = true;
+          } else {
+            document.getElementById('dev-status').innerHTML = 
+              `<div class="error">❌ API is not accessible: ${results.error}</div>`;
+          }
+          
+          // Display endpoint results
+          results.endpoints.forEach(endpoint => {
+            const endpointEl = document.createElement('div');
+            endpointEl.className = 'endpoint-result';
+            
+            if (endpoint.success) {
+              endpointEl.innerHTML = `
+                <h4 class="success">✅ ${endpoint.name}</h4>
+                <div>Status: ${endpoint.status}</div>
+                <div>Response time: ${endpoint.time}ms</div>
+              `;
+              
+              if (endpoint.name === 'Public Blogs' && endpoint.items !== undefined) {
+                endpointEl.innerHTML += `<div>Found ${endpoint.items} blogs</div>`;
+                if (endpoint.items > 0) {
+                  devHasBlogs = true;
+                  endpointEl.innerHTML += `<pre>${JSON.stringify(endpoint.sample, null, 2)}</pre>`;
+                }
+              }
+            } else {
+              endpointEl.innerHTML = `
+                <h4 class="error">❌ ${endpoint.name}</h4>
+                <div>Error: ${endpoint.error || 'Unknown error'}</div>
+              `;
+            }
+            
+            document.getElementById('dev-endpoints').appendChild(endpointEl);
+          });
+        }
+        
+        // Test production API
+        if (testProd) {
+          prodResults.classList.remove('hidden');
+          document.getElementById('prod-status').innerHTML = 
+            '<div><span class="loading"></span> Testing production API...</div>';
+          
+          const results = await testApi(prodUrl, ENDPOINTS);
+          
+          // Update status
+          if (results.success) {
+            document.getElementById('prod-status').innerHTML = 
+              `<div class="success">✅ API is accessible</div>`;
+            prodWorking = true;
+          } else {
+            document.getElementById('prod-status').innerHTML = 
+              `<div class="error">❌ API is not accessible: ${results.error}</div>`;
+          }
+          
+          // Display endpoint results
+          results.endpoints.forEach(endpoint => {
+            const endpointEl = document.createElement('div');
+            endpointEl.className = 'endpoint-result';
+            
+            if (endpoint.success) {
+              endpointEl.innerHTML = `
+                <h4 class="success">✅ ${endpoint.name}</h4>
+                <div>Status: ${endpoint.status}</div>
+                <div>Response time: ${endpoint.time}ms</div>
+              `;
+              
+              if (endpoint.name === 'Public Blogs' && endpoint.items !== undefined) {
+                endpointEl.innerHTML += `<div>Found ${endpoint.items} blogs</div>`;
+                if (endpoint.items > 0) {
+                  prodHasBlogs = true;
+                  endpointEl.innerHTML += `<pre>${JSON.stringify(endpoint.sample, null, 2)}</pre>`;
+                }
+              }
+            } else {
+              endpointEl.innerHTML = `
+                <h4 class="error">❌ ${endpoint.name}</h4>
+                <div>Error: ${endpoint.error || 'Unknown error'}</div>
+              `;
+            }
+            
+            document.getElementById('prod-endpoints').appendChild(endpointEl);
+          });
+        }
+        
+        // Display conclusion
+        conclusion.classList.remove('hidden');
+        let conclusionText = '';
+        
+        if ((!testDev || !devWorking) && (!testProd || !prodWorking)) {
+          conclusionText += `<p class="error">❌ All tested APIs are not accessible.</p>`;
+        } else if (testDev && testProd && devWorking && prodWorking) {
+          conclusionText += `<p class="success">✅ Both development and production APIs are working.</p>`;
+        } else if (testDev && testProd && devWorking && !prodWorking) {
+          conclusionText += `<p class="warning">⚠️ Development API is working but production API is not accessible.</p>`;
+        } else if (testDev && testProd && !devWorking && prodWorking) {
+          conclusionText += `<p class="warning">⚠️ Production API is working but development API is not accessible.</p>`;
+          conclusionText += `<p>Consider updating your API_BASE_URL in src/lib/api.ts to use the production URL:</p>`;
+          conclusionText += `<pre>const API_BASE_URL = "${prodUrl}";</pre>`;
+        }
+        
+        // Check for blogs
+        if ((!testDev || !devHasBlogs) && (!testProd || !prodHasBlogs)) {
+          conclusionText += `<p class="warning">⚠️ No approved blogs found in any tested API.</p>`;
+          conclusionText += `<p>You may need to approve some blogs via the admin interface.</p>`;
+        }
+        
+        document.getElementById('conclusion-text').innerHTML = conclusionText;
+      });
+      
+      async function testApi(baseUrl, endpoints) {
+        try {
+          const endpointResults = [];
+          
+          for (const endpoint of endpoints) {
+            try {
+              const url = `${baseUrl}${endpoint.path}`;
+              const options = {};
+              
+              if (endpoint.credentials) {
+                options.credentials = 'include';
+              }
+              
+              const startTime = Date.now();
+              const response = await fetch(url, options);
+              const endTime = Date.now();
+              
+              const result = {
+                name: endpoint.name,
+                url,
+                status: response.status,
+                success: response.ok,
+                time: endTime - startTime
+              };
+              
+              if (response.ok) {
+                try {
+                  const data = await response.json();
+                  
+                  if (data.data && Array.isArray(data.data)) {
+                    result.items = data.data.length;
+                    
+                    if (data.data.length > 0) {
+                      result.sample = data.data[0];
+                    }
+                  } else {
+                    result.data = data;
+                  }
+                } catch (parseError) {
+                  result.parseError = parseError.message;
+                }
+              }
+              
+              endpointResults.push(result);
+            } catch (error) {
+              endpointResults.push({
+                name: endpoint.name,
+                url: `${baseUrl}${endpoint.path}`,
+                error: error.message,
+                success: false
+              });
+            }
+          }
+          
+          return {
+            success: endpointResults.some(r => r.success),
+            endpoints: endpointResults
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error.message,
+            endpoints: []
+          };
+        }
+      }
+    });
+  </script>
+</body>
+</html> 
