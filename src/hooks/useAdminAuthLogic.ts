@@ -17,9 +17,7 @@ export default function useAdminAuthLogic() {
     const verifyAuth = async () => {
       try {
         setAuthChecking(true);
-        console.log("Verifying authentication status...");
         const isValid = await checkAuth();
-        console.log("Authentication check result:", isValid);
         setIsAuthenticated(isValid);
       } catch (err) {
         console.error("Error verifying authentication:", err);
@@ -39,14 +37,9 @@ export default function useAdminAuthLogic() {
     setError(null);
 
     try {
-      console.log("Attempting login with username:", username);
       await adminLogin(username, password);
-
       // Trust the login call and set authenticated to true
-      // Don't immediately re-check auth as it can cause race conditions
       setIsAuthenticated(true);
-      console.log("Login successful - setting authenticated state");
-
       return true;
     } catch (err) {
       console.error("Login failed:", err);
@@ -59,8 +52,6 @@ export default function useAdminAuthLogic() {
 
   // Logout function - clears cookies and session on the server
   const logout = async () => {
-    console.log("Logging out user");
-
     try {
       await apiLogout();
       setIsAuthenticated(false);
@@ -73,7 +64,6 @@ export default function useAdminAuthLogic() {
 
   // Function to handle logout with error message
   const forcedLogout = (errorMessage: string) => {
-    console.error("Forced logout due to:", errorMessage);
     setError(errorMessage);
     setIsAuthenticated(false);
 

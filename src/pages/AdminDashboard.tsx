@@ -90,8 +90,6 @@ const AdminDashboard = () => {
         setLoading(true);
         setError(null);
 
-        console.log("Fetching admin blogs with status:", activeTab);
-
         // Fetch blogs with better error handling
         try {
           const blogsResult = await getAdminBlogs(
@@ -100,13 +98,11 @@ const AdminDashboard = () => {
             activeTab
           );
 
-          console.log("Blogs result:", blogsResult);
           setBlogs(blogsResult.data);
           setTotalPages(blogsResult.pagination.totalPages);
           setTotalCount(blogsResult.pagination.totalCount);
         } catch (blogsErrorUnknown) {
           const blogsError = blogsErrorUnknown as Error;
-          console.error("Error fetching blogs:", blogsError);
 
           // Check for auth errors (401 Unauthorized)
           if (blogsError instanceof Error && "code" in blogsError) {
@@ -115,7 +111,6 @@ const AdminDashboard = () => {
               authError.code === "unauthorized" ||
               blogsError.message?.includes("authentication")
             ) {
-              console.warn("Authentication error detected");
               forcedLogout("Your session has expired. Please log in again.");
               return; // Exit early
             } else {
@@ -130,7 +125,6 @@ const AdminDashboard = () => {
         // Fetch stats with separate error handling
         try {
           const statsResult = await getAdminStats();
-          console.log("Stats result:", statsResult);
 
           const statsMap = statsResult.reduce((acc, item) => {
             acc[item.status] = item.count;
@@ -144,7 +138,6 @@ const AdminDashboard = () => {
           });
         } catch (statsErrorUnknown) {
           const statsError = statsErrorUnknown as Error;
-          console.error("Error fetching stats:", statsError);
 
           // Don't show error if we already have a more serious one
           if (!error) {
@@ -166,7 +159,6 @@ const AdminDashboard = () => {
           }
         }
       } catch (err) {
-        console.error("Error in fetchData:", err);
         setError(
           "Failed to load data. Please try again or log out and back in."
         );
@@ -235,7 +227,6 @@ const AdminDashboard = () => {
 
     try {
       if (type === "delete") {
-        console.log(`Deleting blog post: ${blog.id}`);
         await deleteBlog(blog.id);
         toast({
           title: "Blog Deleted",
@@ -243,7 +234,6 @@ const AdminDashboard = () => {
         });
       } else {
         const status = type === "approve" ? "approved" : "rejected";
-        console.log(`Updating blog status to ${status}: ${blog.id}`);
         await updateBlogStatus(blog.id, status, adminNotes);
         toast({
           title: `Blog ${status === "approved" ? "Approved" : "Rejected"}`,
@@ -267,7 +257,6 @@ const AdminDashboard = () => {
       // Remove deleted/approved/rejected blog from the list
       setBlogs((currentBlogs) => currentBlogs.filter((b) => b.id !== blog.id));
     } catch (err) {
-      console.error("Error executing action:", err);
       toast({
         title: "Action Failed",
         description: "There was an error processing your request.",
@@ -345,49 +334,6 @@ const AdminDashboard = () => {
           </div>
         </div>
       </header>
-
-      {/* Debug Panel */}
-      <div className="container mx-auto px-4 py-4 bg-gray-100 rounded-lg my-4 border border-gray-300">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Debug Information</h2>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                console.log("Auth state:", {
-                  authLoaded,
-                  isAuthenticated,
-                });
-                console.log("Current path:", location.pathname);
-              }}
-            >
-              Log Auth State
-            </Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2 text-xs font-mono">
-          <div className="p-2 bg-white rounded border border-gray-200">
-            <strong>Auth Loaded:</strong> {authLoaded.toString()}
-            <br />
-            <strong>Is Authenticated:</strong> {isAuthenticated.toString()}
-            <br />
-            <strong>Loading:</strong> {loading.toString()}
-            <br />
-            <strong>Error:</strong> {error || "none"}
-          </div>
-          <div className="p-2 bg-white rounded border border-gray-200">
-            <strong>Current Route:</strong> {location.pathname}
-          </div>
-          <div className="p-2 bg-white rounded border border-gray-200">
-            <strong>Pending Blogs:</strong> {stats.pending}
-            <br />
-            <strong>Approved Blogs:</strong> {stats.approved}
-            <br />
-            <strong>Rejected Blogs:</strong> {stats.rejected}
-          </div>
-        </div>
-      </div>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
