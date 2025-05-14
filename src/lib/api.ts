@@ -3,7 +3,27 @@
  */
 
 // Base API URL
-const API_BASE_URL = "http://localhost:8000/api";
+// Try production URL first, fallback to localhost for development
+const API_BASE_URL = "https://heliosensium-blog-backend.onrender.com/api";
+
+// Log the current API URL being used
+console.log(`Using API URL: ${API_BASE_URL}`);
+
+// Auth token storage key
+const AUTH_TOKEN_KEY = "admin_auth_token";
+
+/**
+ * AUTHENTICATION NOTES:
+ * 
+ * The backend API uses JWT tokens for authentication:
+ * 1. The login endpoint returns a JWT token in the response
+ * 2. We store this token in localStorage
+ * 3. All subsequent admin API requests include the token in the Authorization header
+ * 4. The token is cleared on logout or when validation fails
+ *
+ * This approach has been updated from a previous cookie-based approach that was not working
+ * correctly with the backend implementation.
+ */
 
 // Types
 export interface Blog {
@@ -49,26 +69,73 @@ export class ApiError extends Error {
   }
 }
 
+// Helper to get the auth token from storage
+const getAuthToken = (): string | null => {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+};
+
+// Helper to set the auth token in storage
+const setAuthToken = (token: string): void => {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+};
+
+// Helper to clear the auth token from storage
+const clearAuthToken = (): void => {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+};
+
+// Helper to add auth headers to requests if token exists
+const getAuthHeaders = (): HeadersInit => {
+  const token = getAuthToken();
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+  
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  
+  return headers;
+};
+
 // Public API functions
 export const getBlogs = async (
   limit: number = 10,
   cursor?: string,
   sort: "views" | "submissionDate" = "submissionDate"
 ): Promise<PaginatedBlogs> => {
-  let url = `${API_BASE_URL}/blogs?limit=${limit}&sort=${sort}`;
+  // Only fetch approved blogs for public display
+  let url = `${API_BASE_URL}/blogs?limit=${limit}&sort=${sort}&status=approved`;
 
   if (cursor) {
     url += `&cursor=${cursor}`;
   }
 
-  const response = await fetch(url);
+  console.log(`Fetching blogs from: ${url}`);
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new ApiError(error.error.message, error.error.code);
+  try {
+    const response = await fetch(url);
+    console.log(`Response status: ${response.status}`);
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+        console.error("Error response data:", errorData);
+      } catch (jsonError) {
+        console.error("Failed to parse error response:", jsonError);
+        errorData = { error: { message: "Unknown error", code: "unknown" } };
+      }
+      throw new ApiError(errorData.error.message, errorData.error.code);
+    }
+
+    const data = await response.json();
+    console.log(`Blogs fetched, count: ${data.data?.length || 0}`);
+    return data;
+  } catch (error) {
+    console.error("Error fetching blogs:", error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 export const getBlogById = async (id: string): Promise<Blog> => {
@@ -112,7 +179,6 @@ export const adminLogin = async (
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ username, password }),
-    credentials: "include",
   });
 
   if (!response.ok) {
@@ -121,15 +187,26 @@ export const adminLogin = async (
   }
 
   const result = await response.json();
+
+  // Store the JWT token from the response
+  if (result.token) {
+    setAuthToken(result.token);
+  }
+
   return { success: true };
 };
 
 // Function to check if user is authenticated
 export const checkAuth = async (): Promise<boolean> => {
   try {
+    // If no token exists, user is not authenticated
+    if (!getAuthToken()) {
+      return false;
+    }
+
     const response = await fetch(`${API_BASE_URL}/auth/validate`, {
       method: "GET",
-      credentials: "include",
+      headers: getAuthHeaders(),
     });
 
     return response.ok;
@@ -144,12 +221,17 @@ export const logout = async (): Promise<boolean> => {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/logout`, {
       method: "POST",
-      credentials: "include",
+      headers: getAuthHeaders(),
     });
+
+    // Clear token regardless of response
+    clearAuthToken();
 
     return response.ok;
   } catch (err) {
     console.error("Logout failed:", err);
+    // Still clear token on error
+    clearAuthToken();
     return false;
   }
 };
@@ -170,7 +252,7 @@ export const getAdminBlogs = async (
   const response = await fetch(
     `${API_BASE_URL}/admin/blogs?page=${page}&limit=${limit}&status=${status}`,
     {
-      credentials: "include",
+      headers: getAuthHeaders(),
     }
   );
 
@@ -185,7 +267,7 @@ export const getAdminBlogs = async (
 
 export const getAdminBlogById = async (id: string): Promise<Blog> => {
   const response = await fetch(`${API_BASE_URL}/admin/blogs/${id}`, {
-    credentials: "include",
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -204,10 +286,7 @@ export const updateBlogStatus = async (
 ): Promise<Blog> => {
   const response = await fetch(`${API_BASE_URL}/admin/blogs/${id}/status`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
+    headers: getAuthHeaders(),
     body: JSON.stringify({ status, adminNotes }),
   });
 
@@ -223,7 +302,7 @@ export const updateBlogStatus = async (
 export const deleteBlog = async (id: string): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/admin/blogs/${id}`, {
     method: "DELETE",
-    credentials: "include",
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -239,7 +318,7 @@ export const getAdminStats = async (): Promise<
   }[]
 > => {
   const response = await fetch(`${API_BASE_URL}/admin/stats`, {
-    credentials: "include",
+    headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -257,10 +336,7 @@ export const updateBlogContent = async (
 ): Promise<Blog> => {
   const response = await fetch(`${API_BASE_URL}/admin/blogs/${id}/content`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
+    headers: getAuthHeaders(),
     body: JSON.stringify({ content }),
   });
 
